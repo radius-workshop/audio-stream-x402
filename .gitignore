@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Cloudflare / Wrangler local state
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Foundry build output and vendored installs
+contracts/.env
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/

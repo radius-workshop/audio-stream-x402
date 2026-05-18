@@ -1,0 +1,29 @@
+name = "goldberg-sessions"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./assets"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "SessionDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SessionDO"]
+
+[vars]
+PAYEE_ADDRESS = "0x136C492118B5Bc6e490F62044B1cFf462822Df28"
+TOKEN_ADDRESS = "0x33ad9e4BD16B69B5BFdED37D8B5D9fF9aba014Fb"
+ESCROW_ADDRESS = "0x7a2568e3258025f49567a2aab39a2c100fc2af4f"
+NETWORK = "radius-testnet"
+CHAIN_ID = "72344"
+# Price per ~5s audio chunk, in SBC base units (6 decimals). 1000 = 0.001 SBC
+CHUNK_PRICE = "1000"
+CHUNK_COUNT = "46"
+# When true, the worker skips actual onchain open/close calls but still
+# performs full EIP-712 voucher verification + monotonic state enforcement.
+MOCK_CHAIN = "false"

@@ -1,0 +1,21 @@
+{
+  "name": "goldberg-sessions",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Goldberg Sessions — pay-per-buffer audio streaming PoC using MPP session vouchers on Radius",
+  "scripts": {
+    "check": "npm run typecheck",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "prepare-audio": "bash scripts/prepare-audio.sh",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.49.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260518.1",
+    "typescript": "^5.6.3",
+    "wrangler": "^4.92.0"
+  }
+}

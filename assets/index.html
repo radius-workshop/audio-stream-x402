@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Goldberg Sessions</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0d10;
+        --fg: #e7ecf3;
+        --muted: #8892a0;
+        --accent: #6ee7b7;
+        --pay: #fbbf24;
+        --buf: #34d399;
+        --play: #60a5fa;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 14px/1.45 ui-monospace, "SF Mono", Menlo, monospace;
+        background: var(--bg);
+        color: var(--fg);
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 420px;
+      }
+      main {
+        padding: 28px;
+        max-width: 880px;
+        width: 100%;
+        justify-self: end;
+      }
+      aside {
+        border-left: 1px solid #1a1f26;
+        background: #08090c;
+        padding: 22px 18px;
+        overflow-y: auto;
+        max-height: 100vh;
+        position: sticky;
+        top: 0;
+      }
+      @media (max-width: 1100px) {
+        body { grid-template-columns: 1fr; }
+        aside { border-left: 0; border-top: 1px solid #1a1f26; position: static; max-height: none; }
+      }
+      h1 { font-size: 18px; margin: 0 0 4px; }
+      .sub { color: var(--muted); margin-bottom: 24px; }
+      .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+      button {
+        background: var(--accent);
+        color: #04110a;
+        border: 0;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      button.ghost {
+        background: transparent;
+        color: var(--fg);
+        border: 1px solid #2a3340;
+        font-weight: 500;
+      }
+      button.ghost:hover:not(:disabled) { background: #141921; }
+
+      .session-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        border: 1px solid #1a1f26;
+        background: #0d1014;
+        transition: border-color 0.2s, background 0.2s;
+      }
+      .session-banner.open {
+        border-color: #1e3a2c;
+        background: #0e1612;
+      }
+      .session-banner.closing {
+        border-color: #3a2715;
+        background: #161210;
+      }
+      .session-status { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+      .session-status .dot {
+        width: 9px; height: 9px; border-radius: 999px;
+        background: #4b5563;
+      }
+      .session-banner.open .dot { background: #34d399; box-shadow: 0 0 8px #34d399; animation: pulse 1.4s ease-in-out infinite alternate; }
+      .session-banner.closing .dot { background: #fbbf24; }
+      .session-actions { display: flex; align-items: center; gap: 12px; }
+      .session-actions a {
+        font-size: 12px;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .session-actions a:hover { text-decoration: underline; }
+      .timeline {
+        position: relative;
+        height: 38px;
+        background: #1a1f26;
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 18px 0;
+      }
+      .seg {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-right: 1px solid #0b0d10;
+      }
+      .seg.unpaid { background: #232a33; }
+      .seg.paid { background: var(--buf); }
+      .seg.paying { background: var(--pay); animation: pulse 0.6s ease-in-out infinite alternate; }
+      @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+      .playhead {
+        position: absolute;
+        top: -3px;
+        bottom: -3px;
+        width: 2px;
+        background: var(--play);
+        pointer-events: none;
+        transition: left 0.1s linear;
+      }
+      .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+      .stat { background: #141921; padding: 10px 12px; border-radius: 6px; }
+      .stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+      .stat .val { font-size: 18px; margin-top: 2px; }
+      pre#log {
+        background: #141921;
+        padding: 12px;
+        border-radius: 6px;
+        max-height: 240px;
+        overflow: auto;
+        font-size: 12px;
+        margin: 0;
+      }
+      a { color: var(--accent); }
+      .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+      /* ---- architecture drawer ---- */
+      aside h2 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 0 0 10px;
+        font-weight: 600;
+      }
+      .tier {
+        border-radius: 8px;
+        padding: 10px 12px 12px;
+        margin-bottom: 8px;
+        border: 1px solid #1a1f26;
+        background: #0d1014;
+      }
+      .tier-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+      }
+      .tier-label .badge {
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+      .tier-browser   { border-color: #1e2a3a; }
+      .tier-browser   .tier-label { color: #93c5fd; }
+      .tier-browser   .badge { background: #1e2a3a; color: #93c5fd; }
+      .tier-cloudflare { border-color: #3a2715; }
+      .tier-cloudflare .tier-label { color: #f59e0b; }
+      .tier-cloudflare .badge { background: #3a2715; color: #f59e0b; }
+      .tier-radius    { border-color: #1e3a2c; }
+      .tier-radius    .tier-label { color: #6ee7b7; }
+      .tier-radius    .badge { background: #1e3a2c; color: #6ee7b7; }
+
+      .comp {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        gap: 8px;
+        padding: 7px 8px;
+        border-radius: 5px;
+        background: #11151b;
+        margin-bottom: 4px;
+        position: relative;
+        transition: background 0.15s, box-shadow 0.15s;
+      }
+      .comp:last-child { margin-bottom: 0; }
+      .comp .icon { font-size: 13px; text-align: center; opacity: 0.85; }
+      .comp .name { font-size: 12px; font-weight: 600; }
+      .comp .desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+      .comp.active {
+        background: #1b2730;
+        box-shadow: inset 0 0 0 1px var(--play);
+      }
+      .comp.flash {
+        animation: flash 0.7s ease-out;
+      }
+      @keyframes flash {
+        0%   { background: #2a3947; box-shadow: 0 0 0 0 #60a5fa; }
+        100% { background: #11151b; box-shadow: 0 0 0 0 transparent; }
+      }
+
+      .arrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 6px 4px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .arrow .line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #2a3340, transparent);
+      }
+      .arrow.money .line { background: linear-gradient(to right, transparent, #fbbf24, transparent); }
+      .arrow.voucher .line { background: linear-gradient(to right, transparent, #6ee7b7, transparent); }
+      .arrow.flash .line { box-shadow: 0 0 8px currentColor; }
+
+      .legend {
+        margin-top: 14px;
+        padding: 10px 12px;
+        background: #0d1014;
+        border: 1px solid #1a1f26;
+        border-radius: 8px;
+        font-size: 11px;
+      }
+      .legend h2 { margin-bottom: 8px; }
+      .legend .item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--muted); }
+      .legend .dot {
+        width: 10px; height: 10px; border-radius: 999px; flex-shrink: 0;
+      }
+      .legend .dot.money { background: #fbbf24; }
+      .legend .dot.voucher { background: #6ee7b7; }
+      .legend .dot.audio { background: #60a5fa; }
+
+      .counter {
+        background: #0d1014;
+        border: 1px solid #1a1f26;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-top: 10px;
+        font-size: 11px;
+      }
+      .counter .row2 { display: flex; justify-content: space-between; margin-bottom: 4px; }
+      .counter .row2:last-child { margin-bottom: 0; }
+      .counter .k { color: var(--muted); }
+      .counter .v { font-weight: 600; }
+      .counter .v.onchain { color: #fbbf24; }
+      .counter .v.offchain { color: #6ee7b7; }
+    </style>
+  </head>
+  <body>
+    <main>
+    <h1>Goldberg Sessions</h1>
+    <div class="sub">
+      Pay-per-buffer audio on Radius. One onchain <code>open</code> escrow → offchain EIP-712 voucher per chunk →
+      one onchain <code>close</code>. Vouchers only signed while the buffer is filling; cached chunks replay free.
+    </div>
+
+    <div id="session-banner" class="session-banner closed">
+      <div class="session-status">
+        <span class="dot"></span>
+        <span id="session-status-text">No session — click Play to open escrow</span>
+      </div>
+      <div class="session-actions">
+        <a id="session-open-link" href="#" target="_blank" rel="noopener" style="display:none">open tx ↗</a>
+        <button id="end-session" class="ghost" disabled>End session</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <button id="play">Play</button>
+      <button id="seek-fwd">⏩ +10s (forces buffer)</button>
+      <audio id="audio" controls style="flex: 1"></audio>
+    </div>
+
+    <div id="timeline" class="timeline"><div id="playhead" class="playhead" style="left: 0"></div></div>
+
+    <div class="stats">
+      <div class="stat"><div class="label">Chunks paid</div><div class="val" id="s-paid">0</div></div>
+      <div class="stat"><div class="label">Total spent (SBC)</div><div class="val" id="s-spent">0.000</div></div>
+      <div class="stat"><div class="label">Buffer ahead</div><div class="val" id="s-buf">0.0s</div></div>
+    </div>
+
+    <pre id="log"></pre>
+    <div class="note">
+      Audio: J.S. Bach — Goldberg Variations BWV 988, Aria. Performed by Bradley Lehman.
+      <a href="https://commons.wikimedia.org/wiki/File:988-aria.lehman1.ogg" target="_blank" rel="noopener">Public Domain via Wikimedia Commons</a>.
+    </div>
+    </main>
+
+    <aside>
+      <h2>Architecture</h2>
+
+      <div class="tier tier-browser">
+        <div class="tier-label"><span>Browser</span><span class="badge">Client</span></div>
+        <div class="comp" id="c-mse">
+          <div class="icon">♫</div>
+          <div>
+            <div class="name">MediaSource player</div>
+            <div class="desc">fMP4 SourceBuffer, append-on-arrival</div>
+          </div>
+        </div>
+        <div class="comp" id="c-bufloop">
+          <div class="icon">⟳</div>
+          <div>
+            <div class="name">Buffer-ahead loop</div>
+            <div class="desc">fetches only while ahead &lt; 15s</div>
+          </div>
+        </div>
+        <a class="comp" id="c-wallet" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
+          <div class="icon">⚿</div>
+          <div>
+            <div class="name">Ephemeral viem wallet ↗</div>
+            <div class="desc" id="c-wallet-desc">localStorage key, signs EIP-712 vouchers</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="arrow voucher" id="a-voucher">
+        <span>signed voucher</span><div class="line"></div><span>offchain</span>
+      </div>
+
+      <div class="tier tier-cloudflare">
+        <div class="tier-label"><span>Cloudflare</span><span class="badge">Edge</span></div>
+        <div class="comp" id="c-worker">
+          <div class="icon">⚡</div>
+          <div>
+            <div class="name">Worker (resource server)</div>
+            <div class="desc">/manifest, /session/*, /chunk/:n</div>
+          </div>
+        </div>
+        <div class="comp" id="c-do">
+          <div class="icon">▣</div>
+          <div>
+            <div class="name">SessionDO (Durable Object)</div>
+            <div class="desc">per-session state, monotonic voucher check</div>
+          </div>
+        </div>
+        <div class="comp" id="c-assets">
+          <div class="icon">⬚</div>
+          <div>
+            <div class="name">Static assets</div>
+            <div class="desc">init.mp4 + chunk-NNNN.m4s</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow money" id="a-onchain">
+        <span>open / close</span><div class="line"></div><span>onchain · 2 tx</span>
+      </div>
+
+      <div class="tier tier-radius">
+        <div class="tier-label">
+          <span>Radius testnet</span>
+          <a href="https://testnet.radiustech.xyz" target="_blank" rel="noopener" class="badge" style="text-decoration:none">L1 · 72344 ↗</a>
+        </div>
+        <a class="comp" id="c-escrow" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
+          <div class="icon">⛁</div>
+          <div>
+            <div class="name">SessionEscrow contract</div>
+            <div class="desc" id="c-escrow-desc">holds deposit, verifies final voucher</div>
+          </div>
+        </a>
+        <a class="comp" id="c-sbc" href="https://testnet.radiustech.xyz/address/0x33ad9e4BD16B69B5BFdED37D8B5D9fF9aba014Fb" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
+          <div class="icon">$</div>
+          <div>
+            <div class="name">SBC token (EIP-2612) ↗</div>
+            <div class="desc">permit-pulled into escrow on open</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="counter">
+        <div class="row2"><span class="k">Onchain txs this session</span><span class="v onchain" id="cnt-onchain">0</span></div>
+        <div class="row2"><span class="k">Offchain vouchers signed</span><span class="v offchain" id="cnt-vouchers">0</span></div>
+        <div class="row2"><span class="k">Session id</span><span class="v" id="cnt-sid" style="font-size:10px;">—</span></div>
+        <div class="row2"><span class="k">Open tx</span><a class="v" id="cnt-open-tx" href="#" target="_blank" rel="noopener" style="font-size:10px;text-decoration:none">—</a></div>
+        <div class="row2"><span class="k">Close tx</span><a class="v" id="cnt-close-tx" href="#" target="_blank" rel="noopener" style="font-size:10px;text-decoration:none">—</a></div>
+      </div>
+
+      <div class="legend">
+        <h2>Flow legend</h2>
+        <div class="item"><div class="dot money"></div>Money on chain (SBC, via permit)</div>
+        <div class="item"><div class="dot voucher"></div>Signed voucher (offchain, free)</div>
+        <div class="item"><div class="dot audio"></div>Audio bytes (assets → MSE)</div>
+      </div>
+    </aside>
+
+    <script type="module">
+      const TARGET_AHEAD = 15;
+      const CHUNK_DURATION = 5;
+
+      const audio = document.getElementById("audio");
+      const log = (m) => {
+        const el = document.getElementById("log");
+        el.textContent += `[${new Date().toISOString().slice(11, 19)}] ${m}\n`;
+        el.scrollTop = el.scrollHeight;
+      };
+
+      // ---- architecture drawer event hooks ----
+      let onchainTxCount = 0;
+      let voucherCount = 0;
+      const flash = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove("flash");
+        // reflow to restart animation
+        void el.offsetWidth;
+        el.classList.add("flash");
+      };
+      const setActive = (id, on) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle("active", !!on);
+      };
+      const bumpOnchain = () => {
+        onchainTxCount += 1;
+        document.getElementById("cnt-onchain").textContent = onchainTxCount;
+      };
+      const bumpVoucher = () => {
+        voucherCount += 1;
+        document.getElementById("cnt-vouchers").textContent = voucherCount;
+      };
+
+      const manifest = await fetch("/manifest").then((r) => r.json());
+      log(`manifest: ${manifest.chunks.length} chunks @ ${manifest.pricePerChunkBaseUnits} base units each`);
+
+      // ---- timeline UI ----
+      const tl = document.getElementById("timeline");
+      const segs = manifest.chunks.map((_, i) => {
+        const d = document.createElement("div");
+        d.className = "seg unpaid";
+        d.style.left = `${(i / manifest.chunks.length) * 100}%`;
+        d.style.width = `${100 / manifest.chunks.length}%`;
+        tl.appendChild(d);
+        return d;
+      });
+      const setState = (i, s) => (segs[i].className = `seg ${s}`);
+
+      // ---- MediaSource setup ----
+      // `ms` and `sb` are reassignable so we can rebuild them for each new
+      // session (see reinitMediaSource below).
+      let ms = new MediaSource();
+      audio.src = URL.createObjectURL(ms);
+      audio.addEventListener("error", () => log(`audio error: ${audio.error?.code} ${audio.error?.message}`));
+      ms.addEventListener("error", (e) => log(`mediasource error: ${e}`));
+      await new Promise((r) => ms.addEventListener("sourceopen", r, { once: true }));
+      log(`MediaSource open. readyState=${ms.readyState}`);
+
+      if (!MediaSource.isTypeSupported(manifest.codec)) {
+        log(`!! codec NOT supported: ${manifest.codec}`);
+      }
+      let sb = ms.addSourceBuffer(manifest.codec);
+      sb.mode = "segments";
+      sb.addEventListener("error", (e) => log(`sourcebuffer error event: ${e}`));
+
+      const appendQueue = [];
+      let appending = false;
+      let initAppended = false;
+      const drainQueue = async () => {
+        if (appending || !appendQueue.length) return;
+        appending = true;
+        const buf = appendQueue.shift();
+        try {
+          sb.appendBuffer(buf);
+          await new Promise((res, rej) => {
+            sb.addEventListener("updateend", res, { once: true });
+            sb.addEventListener("error", rej, { once: true });
+          });
+        } catch (e) {
+          log(`appendBuffer threw: ${e?.name ?? e} — ${e?.message ?? ""}`);
+        }
+        appending = false;
+        drainQueue();
+      };
+
+      // ---- init segment (free) ----
+      const initRes = await fetch("/init.mp4");
+      const initBytes = await initRes.arrayBuffer();
+      log(`init segment: ${initBytes.byteLength} bytes`);
+      appendQueue.push(initBytes);
+      drainQueue();
+      // Wait for init to actually land before any chunks
+      await new Promise((r) => {
+        const tick = () => {
+          if (!appending && appendQueue.length === 0) {
+            initAppended = true;
+            r();
+          } else setTimeout(tick, 30);
+        }; tick();
+      });
+      log(`init appended. buffered ranges: ${audio.buffered.length}`);
+
+      // ---- MPP session voucher client ----
+      // Ephemeral demo wallet (testnet only). Persisted in localStorage so a
+      // refresh keeps the same key — making session continuity visible.
+      const { privateKeyToAccount, generatePrivateKey } = await import(
+        "https://esm.sh/viem@2.49.2/accounts"
+      );
+      const viem = await import("https://esm.sh/viem@2.49.2");
+      const { createWalletClient, createPublicClient, http, defineChain, parseAbi, encodePacked, keccak256 } = viem;
+
+      const radiusChain = defineChain({
+        id: 72344,
+        name: "Radius Testnet",
+        nativeCurrency: { decimals: 18, name: "RUSD", symbol: "RUSD" },
+        rpcUrls: { default: { http: ["https://rpc.testnet.radiustech.xyz"] } },
+        blockExplorers: { default: { name: "Radius", url: "https://testnet.radiustech.xyz" } },
+      });
+
+      let pk = localStorage.getItem("audio-x402.pk");
+      if (!pk) {
+        pk = generatePrivateKey();
+        localStorage.setItem("audio-x402.pk", pk);
+      }
+      const account = privateKeyToAccount(pk);
+      log(`demo payer wallet: ${account.address}`);
+
+      // ---- Radius testnet explorer links ----
+      const EXPLORER = "https://testnet.radiustech.xyz";
+      const addrUrl = (a) => `${EXPLORER}/address/${a}`;
+      const txUrl = (h) => `${EXPLORER}/tx/${h}`;
+      const randTx = () =>
+        "0x" + Array.from(crypto.getRandomValues(new Uint8Array(32)))
+          .map((b) => b.toString(16).padStart(2, "0")).join("");
+
+      // Wire static links now that we know addresses
+      document.getElementById("c-wallet").href = addrUrl(account.address);
+      document.getElementById("c-wallet-desc").textContent =
+        `${account.address.slice(0, 10)}…${account.address.slice(-6)} · signs EIP-712 vouchers`;
+      if (manifest.escrow && manifest.escrow !== "0x0000000000000000000000000000000000000000") {
+        document.getElementById("c-escrow").href = addrUrl(manifest.escrow);
+        document.getElementById("c-escrow-desc").textContent =
+          `${manifest.escrow.slice(0, 10)}…${manifest.escrow.slice(-6)} · holds deposit`;
+      } else {
+        document.getElementById("c-escrow").removeAttribute("href");
+        document.getElementById("c-escrow-desc").textContent =
+          "not deployed — set ESCROW_ADDRESS in wrangler.toml";
+      }
+
+      setActive("c-wallet", true);
+      setActive("c-mse", true);
+      setActive("c-bufloop", true);
+      setActive("c-worker", true);
+      setActive("c-assets", true);
+
+      const DEPOSIT_CAP = BigInt(manifest.pricePerChunkBaseUnits) * BigInt(manifest.chunks.length);
+
+      const newSessionId = () =>
+        "0x" +
+        Array.from(crypto.getRandomValues(new Uint8Array(32)))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      let sessionId = newSessionId();
+
+      const paid = new Set();
+      let cumulative = 0n;
+      let sessionOpened = false;
+      let sessionEverOpened = false; // distinguishes "first play" from "play again"
+      let openTxHash = null;
+      let closeTxHash = null;
+
+      function resetSessionState() {
+        sessionId = newSessionId();
+        cumulative = 0n;
+        openTxHash = null;
+        closeTxHash = null;
+        nextChunk = 0;
+        paid.clear();
+        // Timeline + main stats
+        segs.forEach((s) => (s.className = "seg unpaid"));
+        document.getElementById("s-paid").textContent = "0";
+        document.getElementById("s-spent").textContent = "0.000";
+        document.getElementById("s-buf").textContent = "0.0s";
+        // Drawer counters
+        document.getElementById("cnt-sid").textContent = "—";
+        const ot = document.getElementById("cnt-open-tx");
+        ot.textContent = "—"; ot.removeAttribute("href");
+        const ct = document.getElementById("cnt-close-tx");
+        ct.textContent = "—"; ct.removeAttribute("href");
+        // Banner
+        document.getElementById("session-open-link").style.display = "none";
+      }
+
+      async function reinitMediaSource() {
+        // Tear down the previous MediaSource and start fresh. Required when
+        // restarting playback after a closed session — the prior SourceBuffer
+        // is tied to the closed session's vouchers.
+        try { audio.pause(); } catch {}
+        audio.removeAttribute("src");
+        audio.load();
+        ms = new MediaSource();
+        audio.src = URL.createObjectURL(ms);
+        await new Promise((r) => ms.addEventListener("sourceopen", r, { once: true }));
+        sb = ms.addSourceBuffer(manifest.codec);
+        sb.mode = "segments";
+        sb.addEventListener("error", (e) => log(`sourcebuffer error event: ${e}`));
+        appendQueue.length = 0;
+        appending = false;
+        const initRes = await fetch("/init.mp4");
+        appendQueue.push(await initRes.arrayBuffer());
+        drainQueue();
+        // Wait for init to settle
+        while (appending || appendQueue.length) await new Promise((r) => setTimeout(r, 30));
+      }
+
+      const banner = document.getElementById("session-banner");
+      const bannerText = document.getElementById("session-status-text");
+      const setBanner = (state, text) => {
+        banner.className = `session-banner ${state}`;
+        bannerText.textContent = text;
+      };
+
+      const SBC_ABI = parseAbi([
+        "function balanceOf(address) view returns (uint256)",
+        "function nonces(address) view returns (uint256)",
+        "function name() view returns (string)",
+      ]);
+      const ESCROW_ABI = parseAbi([
+        "function open(bytes32 sessionId, address payee, uint128 amount, uint64 duration, uint256 permitDeadline, uint8 pv, bytes32 pr, bytes32 ps)",
+      ]);
+
+      const pubClient = createPublicClient({ chain: radiusChain, transport: http() });
+      const walletClient = createWalletClient({ account, chain: radiusChain, transport: http() });
+
+      async function ensureFunded() {
+        const sbc = await pubClient.readContract({
+          address: manifest.token,
+          abi: SBC_ABI,
+          functionName: "balanceOf",
+          args: [account.address],
+        });
+        const gas = await pubClient.getBalance({ address: account.address });
+        if (sbc >= DEPOSIT_CAP && gas > 0n) return;
+        log("dripping from faucet...");
+        const r = await fetch("/session/fund", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ address: account.address }),
+        });
+        const drip = await r.json();
+        if (!drip.success) {
+          log(`faucet error: ${JSON.stringify(drip.error)}`);
+          throw new Error("faucet drip failed");
+        }
+        log(`faucet drip ok — tx ${drip.tx_hash?.slice(0, 12)}…`);
+        // Wait briefly for the drip tx to settle
+        for (let i = 0; i < 20; i++) {
+          await new Promise((r) => setTimeout(r, 500));
+          const bal = await pubClient.readContract({
+            address: manifest.token,
+            abi: SBC_ABI,
+            functionName: "balanceOf",
+            args: [account.address],
+          });
+          if (bal >= DEPOSIT_CAP) return;
+        }
+        throw new Error("faucet drip did not settle in time");
+      }
+
+      async function signSbcPermit(spender, value, deadline) {
+        const nonce = await pubClient.readContract({
+          address: manifest.token,
+          abi: SBC_ABI,
+          functionName: "nonces",
+          args: [account.address],
+        });
+        const tokenName = await pubClient.readContract({
+          address: manifest.token,
+          abi: SBC_ABI,
+          functionName: "name",
+        });
+        const permitDomain = {
+          name: tokenName,
+          version: "1",
+          chainId: manifest.chainId,
+          verifyingContract: manifest.token,
+        };
+        const permitTypes = {
+          Permit: [
+            { name: "owner", type: "address" },
+            { name: "spender", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "nonce", type: "uint256" },
+            { name: "deadline", type: "uint256" },
+          ],
+        };
+        const sig = await account.signTypedData({
+          domain: permitDomain,
+          types: permitTypes,
+          primaryType: "Permit",
+          message: {
+            owner: account.address,
+            spender,
+            value,
+            nonce,
+            deadline,
+          },
+        });
+        return {
+          r: sig.slice(0, 66),
+          s: "0x" + sig.slice(66, 130),
+          v: parseInt(sig.slice(130, 132), 16),
+        };
+      }
+
+      async function openSession() {
+        if (sessionOpened) return;
+
+        if (!manifest.mockChain) {
+          // Real onchain path: fund wallet → permit → escrow.open() → wait for receipt
+          await ensureFunded();
+          log("signing EIP-2612 permit for SBC...");
+          const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
+          const permit = await signSbcPermit(manifest.escrow, DEPOSIT_CAP, deadline);
+
+          log("broadcasting SessionEscrow.open()...");
+          openTxHash = await walletClient.writeContract({
+            address: manifest.escrow,
+            abi: ESCROW_ABI,
+            functionName: "open",
+            args: [
+              sessionId,
+              manifest.payee,
+              DEPOSIT_CAP,
+              600n, // duration seconds
+              deadline,
+              permit.v,
+              permit.r,
+              permit.s,
+            ],
+          });
+          log(`open tx submitted: ${openTxHash}`);
+          await pubClient.waitForTransactionReceipt({ hash: openTxHash });
+          log(`open tx mined ✓`);
+        }
+
+        const r = await fetch("/session/open", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            sessionId,
+            payer: account.address,
+            deposited: DEPOSIT_CAP.toString(),
+            expirySeconds: 600,
+            openTxHash,
+          }),
+        });
+        if (!r.ok) throw new Error("open session failed: " + (await r.text()));
+        sessionOpened = true;
+        if (manifest.mockChain) openTxHash = randTx();
+        log(
+          `session ${sessionId.slice(0, 10)}… opened. deposit cap: ${(Number(DEPOSIT_CAP) / 1e6).toFixed(3)} SBC` +
+            (manifest.mockChain ? " (mock chain)" : " (onchain)"),
+        );
+
+        // Banner
+        setBanner(
+          "open",
+          `Session open · ${(Number(DEPOSIT_CAP) / 1e6).toFixed(3)} SBC escrowed${manifest.mockChain ? " (mock)" : ""}`,
+        );
+        const openLink = document.getElementById("session-open-link");
+        openLink.href = txUrl(openTxHash);
+        openLink.textContent = `open tx ${openTxHash.slice(0, 10)}… ↗`;
+        openLink.style.display = "inline";
+        document.getElementById("end-session").disabled = false;
+
+        // Drawer: register session, flash the onchain path
+        const sidShort = sessionId.slice(0, 6) + "…" + sessionId.slice(-4);
+        document.getElementById("cnt-sid").textContent = sidShort;
+        const openTxEl = document.getElementById("cnt-open-tx");
+        openTxEl.href = txUrl(openTxHash);
+        openTxEl.textContent = openTxHash.slice(0, 8) + "… ↗";
+        setActive("c-do", true);
+        flash("c-sbc");
+        flash("c-escrow");
+        flash("a-onchain");
+        bumpOnchain(); // open() = 1 tx
+      }
+
+      const domain = {
+        name: "SessionEscrow",
+        version: "1",
+        chainId: manifest.chainId,
+        verifyingContract: manifest.escrow,
+      };
+      const types = {
+        Voucher: [
+          { name: "sessionId", type: "bytes32" },
+          { name: "cumulativeAmount", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+        ],
+      };
+
+      async function signVoucher(chunkIndex, newCumulative) {
+        return account.signTypedData({
+          domain,
+          types,
+          primaryType: "Voucher",
+          message: {
+            sessionId,
+            cumulativeAmount: newCumulative,
+            nonce: BigInt(chunkIndex),
+          },
+        });
+      }
+
+      async function fetchChunk(n) {
+        if (paid.has(n)) return null;
+        if (!streamingStarted || !sessionOpened) return null; // session ended mid-flight
+        setState(n, "paying");
+        const newCum = cumulative + BigInt(manifest.pricePerChunkBaseUnits);
+        flash("c-wallet");
+        flash("a-voucher");
+        const signature = await signVoucher(n, newCum);
+        if (!streamingStarted || !sessionOpened) {
+          setState(n, "unpaid");
+          return null; // closed while signing
+        }
+        const voucher = {
+          sessionId,
+          cumulativeAmount: newCum.toString(),
+          nonce: n,
+          signature,
+        };
+        const res = await fetch(`/chunk/${n}`, {
+          headers: { "x-voucher": btoa(JSON.stringify(voucher)) },
+        });
+        flash("c-worker");
+        flash("c-do");
+        if (!res.ok) {
+          setState(n, "unpaid");
+          const txt = await res.text();
+          log(`chunk ${n} rejected: ${res.status} ${txt}`);
+          throw new Error(`chunk ${n}: ${res.status}`);
+        }
+        flash("c-assets");
+        const accepted = res.headers.get("x-voucher-accepted");
+        log(`✓ chunk ${n} voucher accepted — cumulative ${(Number(accepted) / 1e6).toFixed(3)} SBC`);
+        paid.add(n);
+        cumulative = newCum;
+        bumpVoucher(); // count only on successful payment
+        document.getElementById("s-paid").textContent = paid.size;
+        document.getElementById("s-spent").textContent = (Number(cumulative) / 1e6).toFixed(3);
+        setState(n, "paid");
+        return await res.arrayBuffer();
+      }
+
+      async function closeSession() {
+        if (!sessionOpened) return;
+        sessionOpened = false; // guard against double-close
+        // Stop playback + the buffer-ahead loop IMMEDIATELY. The /close fetch
+        // takes a second or two to broadcast onchain; without this guard the
+        // loop keeps firing voucher attempts that the server 410s.
+        streamingStarted = false;
+        try { audio.pause(); } catch {}
+        document.getElementById("end-session").disabled = true;
+        setBanner("closing", "Closing session — submitting final voucher…");
+        try {
+          const r = await fetch(`/session/${sessionId}/close`, { method: "POST" });
+          const body = await r.json();
+          if (body.finalVoucher) {
+            const finalAmt = (Number(body.finalVoucher.cumulativeAmount) / 1e6).toFixed(3);
+            if (manifest.mockChain) {
+              closeTxHash = randTx();
+              log(`session closed. final voucher: ${finalAmt} SBC — in real mode payee would submit this onchain (1 tx)`);
+            } else if (body.closeTxHash) {
+              closeTxHash = body.closeTxHash;
+              log(`✓ close tx submitted: ${body.closeTxHash}`);
+              log(`session closed. payee got ${finalAmt} SBC · payer refund ${(Number(DEPOSIT_CAP) / 1e6 - Number(finalAmt)).toFixed(3)} SBC`);
+            } else if (body.error) {
+              log(`!! close failed: ${body.error}`);
+            } else {
+              log(`session closed (no close tx returned: ${JSON.stringify(body).slice(0, 200)})`);
+            }
+            setBanner("closed", `Session closed · paid ${finalAmt} SBC · refunded ${(Number(DEPOSIT_CAP) / 1e6 - Number(finalAmt)).toFixed(3)} SBC`);
+            if (closeTxHash) {
+              const closeTxEl = document.getElementById("cnt-close-tx");
+              closeTxEl.href = txUrl(closeTxHash);
+              closeTxEl.textContent = closeTxHash.slice(0, 8) + "… ↗";
+              flash("a-onchain");
+              flash("c-escrow");
+              flash("c-sbc");
+              bumpOnchain(); // close() = 1 tx
+            }
+          } else {
+            log("session closed (no chunks consumed).");
+            setBanner("closed", "Session closed (no chunks consumed)");
+          }
+          log("press Play to open a new session.");
+        } catch (e) {
+          log(`close failed: ${e}`);
+        }
+      }
+      window.addEventListener("beforeunload", () => {
+        navigator.sendBeacon?.(`/session/${sessionId}/close`);
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") closeSession();
+      });
+
+      // ---- buffer-ahead loop ----
+      // Gated by `streamingStarted` — set true on first Play. Without this gate,
+      // `bufferedAhead()` returns 0 indefinitely before playback begins and the
+      // loop greedily pays for every chunk.
+      let nextChunk = 0;
+      let bufferLoopRunning = false;
+      let streamingStarted = false;
+      async function bufferLoop() {
+        if (bufferLoopRunning || !streamingStarted) return;
+        bufferLoopRunning = true;
+        try {
+          while (nextChunk < manifest.chunks.length && streamingStarted) {
+            const ahead = bufferedAhead();
+            document.getElementById("s-buf").textContent = ahead.toFixed(1) + "s";
+            if (ahead >= TARGET_AHEAD) {
+              await new Promise((r) => setTimeout(r, 300));
+              continue;
+            }
+            const n = nextChunk++;
+            try {
+              const bytes = await fetchChunk(n);
+              if (bytes) {
+                appendQueue.push(bytes);
+                drainQueue();
+              }
+            } catch (e) {
+              // If the session closed mid-flight, stop the loop — don't hammer 410s.
+              const msg = String(e);
+              if (/410|closed|expired/i.test(msg) || !streamingStarted) {
+                log("session ended — stopping buffer loop.");
+                break;
+              }
+              log(msg);
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+          }
+          // All chunks queued — wait for drain, then close the stream so the
+          // <audio> element knows the duration.
+          while (appending || appendQueue.length) await new Promise((r) => setTimeout(r, 50));
+          if (ms.readyState === "open") {
+            try { ms.endOfStream(); log("stream ended."); } catch (e) { log(`endOfStream: ${e}`); }
+          }
+        } finally {
+          bufferLoopRunning = false;
+        }
+      }
+
+      function bufferedAhead() {
+        const b = audio.buffered;
+        for (let i = 0; i < b.length; i++) {
+          if (b.start(i) <= audio.currentTime && audio.currentTime <= b.end(i)) {
+            return b.end(i) - audio.currentTime;
+          }
+        }
+        return 0;
+      }
+
+      audio.addEventListener("timeupdate", () => {
+        const pct = (audio.currentTime / (manifest.chunks.length * CHUNK_DURATION)) * 100;
+        document.getElementById("playhead").style.left = pct + "%";
+        document.getElementById("s-buf").textContent = bufferedAhead().toFixed(1) + "s";
+        bufferLoop();
+      });
+
+      document.getElementById("play").onclick = async () => {
+        if (sessionOpened) {
+          // Already inside an active session — just resume playback.
+          try { await audio.play(); } catch (e) { log(`play() rejected: ${e?.message ?? e}`); }
+          return;
+        }
+        // Starting a fresh session — if we already played one this page-load,
+        // wipe per-session state and rebuild the MediaSource so the new
+        // sessionId is used end-to-end (otherwise the contract reverts with
+        // "session exists").
+        if (sessionEverOpened) {
+          log("--- starting new session ---");
+          resetSessionState();
+          await reinitMediaSource();
+        }
+        try {
+          await openSession();
+        } catch (e) {
+          log(`openSession: ${e?.message ?? e}`);
+          return;
+        }
+        sessionEverOpened = true;
+        streamingStarted = true;
+        bufferLoop();
+        try { await audio.play(); } catch (e) { log(`play() rejected: ${e?.message ?? e}`); }
+      };
+      document.getElementById("end-session").onclick = () => closeSession();
+      document.getElementById("seek-fwd").onclick = () => {
+        const t = audio.currentTime + 10;
+        audio.currentTime = t;
+        const chunkN = Math.floor(t / CHUNK_DURATION);
+        if (chunkN > nextChunk) nextChunk = chunkN;
+        bufferLoop();
+      };
+    </script>
+  </body>
+</html>
