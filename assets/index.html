@@ -24,6 +24,7 @@
         min-height: 100vh;
         display: grid;
         grid-template-columns: minmax(0, 1fr) 420px;
+        overflow-x: hidden;
       }
       main {
         padding: 28px;
@@ -46,6 +47,55 @@
       }
       h1 { font-size: 18px; margin: 0 0 4px; }
       .sub { color: var(--muted); margin-bottom: 24px; }
+
+      .mobile-playback-notice {
+        display: none;
+        margin: 0 0 16px;
+        padding: 11px 12px;
+        border: 1px solid #3a2715;
+        border-radius: 8px;
+        background: #161210;
+        color: #f8d38b;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .mobile-playback-notice strong {
+        display: block;
+        color: #fbbf24;
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      @media (pointer: coarse) {
+        .mobile-playback-notice {
+          display: block;
+        }
+      }
+
+      .page-header {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+      }
+      .count {
+        flex-shrink: 0;
+        color: var(--muted);
+        margin-top: 2px;
+        opacity: 0.85;
+      }
+      .count-z {
+        opacity: 0;
+        transform-origin: center;
+        animation: count-z-drift 7s ease-in infinite;
+      }
+      @keyframes count-z-drift {
+        0%, 55%   { opacity: 0; transform: translateY(0); }
+        62%       { opacity: 0.75; transform: translateY(0); }
+        85%       { opacity: 0; transform: translateY(-5px); }
+        100%      { opacity: 0; transform: translateY(-5px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .count-z { animation: none; opacity: 0; }
+      }
       .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
       button {
         background: var(--accent);
@@ -130,15 +180,61 @@
       .stat { background: #141921; padding: 10px 12px; border-radius: 6px; }
       .stat .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
       .stat .val { font-size: 18px; margin-top: 2px; }
-      pre#log {
+      pre#log, pre.code-block {
         background: #141921;
         padding: 12px;
         border-radius: 6px;
-        max-height: 240px;
         overflow: auto;
         font-size: 12px;
         margin: 0;
       }
+      pre#log { max-height: 240px; }
+      pre.code-block { max-height: none; line-height: 1.55; }
+      pre.code-block .kw { color: #c4b5fd; }
+      pre.code-block .ty { color: #93c5fd; }
+      pre.code-block .str { color: #6ee7b7; }
+      pre.code-block .cm { color: #6b7480; font-style: italic; }
+      pre.code-block .fn { color: #fbbf24; }
+
+      .contract-divider {
+        border: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #2a3340 20%, #2a3340 80%, transparent);
+        margin: 32px 0 0;
+      }
+      .contract-section { margin-top: 20px; }
+      .contract-section > summary {
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .contract-section > summary::-webkit-details-marker { display: none; }
+      .contract-section > summary::before {
+        content: "▾";
+        color: var(--muted);
+        font-size: 10px;
+        transition: transform 0.15s;
+      }
+      .contract-section:not([open]) > summary::before { transform: rotate(-90deg); }
+      .contract-blurb { color: var(--muted); font-size: 12px; margin: 0 0 6px; }
+      .contract-protocol {
+        font-size: 11px;
+        color: var(--muted);
+        background: #0d1014;
+        border: 1px solid #1a1f26;
+        border-radius: 6px;
+        padding: 6px 10px;
+        margin-bottom: 10px;
+      }
+      .contract-protocol code { color: var(--fg); }
+      .contract-links { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; }
+      .contract-links a { text-decoration: none; }
+      .contract-links a:hover { text-decoration: underline; }
       a { color: var(--accent); }
       .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
 
@@ -202,6 +298,18 @@
         background: #1b2730;
         box-shadow: inset 0 0 0 1px var(--play);
       }
+      .rotate-wallet {
+        margin-top: 6px;
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid #2a3340;
+        border-radius: 4px;
+        font: inherit;
+        font-size: 10px;
+        padding: 2px 8px;
+        cursor: pointer;
+      }
+      .rotate-wallet:hover { background: #141921; color: var(--fg); }
       .comp.flash {
         animation: flash 0.7s ease-out;
       }
@@ -258,15 +366,202 @@
       .counter .v { font-weight: 600; }
       .counter .v.onchain { color: #fbbf24; }
       .counter .v.offchain { color: #6ee7b7; }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 16px;
+          justify-self: stretch;
+        }
+        aside {
+          padding: 16px;
+        }
+        .mobile-playback-notice {
+          display: block;
+        }
+        .page-header {
+          gap: 10px;
+        }
+        .count {
+          width: 32px;
+          height: 40px;
+          margin-top: 1px;
+        }
+        h1 {
+          font-size: 17px;
+          line-height: 1.2;
+        }
+        .sub {
+          margin-bottom: 18px;
+          font-size: 12px;
+        }
+        .session-banner {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 12px;
+          padding: 12px;
+        }
+        .session-actions {
+          justify-content: space-between;
+          gap: 10px;
+        }
+        .session-actions button {
+          min-width: 128px;
+        }
+        .row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          align-items: stretch;
+        }
+        .row audio {
+          grid-column: 1 / -1;
+          width: 100%;
+        }
+        button {
+          min-height: 42px;
+          padding: 8px 10px;
+          white-space: normal;
+        }
+        .timeline {
+          height: 32px;
+          margin: 16px 0;
+        }
+        .stats {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        .stat {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .stat .val {
+          font-size: 16px;
+          margin-top: 0;
+          white-space: nowrap;
+        }
+        pre#log {
+          max-height: 180px;
+        }
+        pre#log,
+        pre.code-block {
+          font-size: 11px;
+          border-radius: 5px;
+        }
+        .contract-divider {
+          margin-top: 24px;
+        }
+        .contract-section > summary {
+          min-height: 36px;
+        }
+        .contract-protocol {
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+        .contract-links {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .tier {
+          padding: 10px;
+        }
+        .comp {
+          grid-template-columns: 16px minmax(0, 1fr);
+        }
+        .comp .name,
+        .comp .desc,
+        .counter .row2 {
+          overflow-wrap: anywhere;
+        }
+        .arrow {
+          gap: 6px;
+          margin-inline: 0;
+        }
+      }
     </style>
   </head>
   <body>
     <main>
-    <h1>Goldberg Sessions</h1>
-    <div class="sub">
-      Pay-per-buffer audio on Radius. One onchain <code>open</code> escrow → offchain EIP-712 voucher per chunk →
-      one onchain <code>close</code>. Vouchers only signed while the buffer is filling; cached chunks replay free.
+    <div class="mobile-playback-notice" role="status" aria-live="polite">
+      <strong>Mobile playback is not supported.</strong>
+      This demo is mobile friendly for reading, but the streaming audio path works best in a desktop browser.
     </div>
+    <header class="page-header">
+      <svg class="count" viewBox="0 0 18 22" width="40" height="49"
+           aria-hidden="true" shape-rendering="crispEdges">
+        <title>Count Kaiserling, sleepless</title>
+
+        <!-- powdered wig -->
+        <g fill="#c8cbd1">
+          <rect x="5" y="4" width="8" height="1"/>
+          <rect x="4" y="5" width="10" height="1"/>
+          <rect x="3" y="6" width="2" height="1"/>
+          <rect x="13" y="6" width="2" height="1"/>
+          <rect x="3" y="7" width="1" height="1"/>
+          <rect x="14" y="7" width="1" height="1"/>
+        </g>
+
+        <!-- face -->
+        <g fill="#d4cfd4">
+          <rect x="5" y="6" width="8" height="1"/>
+          <rect x="4" y="7" width="10" height="1"/>
+          <rect x="4" y="8" width="10" height="1"/>
+          <rect x="4" y="9" width="10" height="1"/>
+          <rect x="5" y="10" width="8" height="1"/>
+          <rect x="6" y="11" width="6" height="1"/>
+          <rect x="7" y="12" width="4" height="1"/>
+        </g>
+
+        <!-- heavy-lidded closed eyes -->
+        <g fill="#4a5260">
+          <rect x="6" y="9" width="2" height="1"/>
+          <rect x="10" y="9" width="2" height="1"/>
+        </g>
+
+        <!-- faint mouth -->
+        <rect x="8" y="11" width="2" height="1" fill="#a89396"/>
+
+        <!-- neck -->
+        <rect x="7" y="13" width="4" height="1" fill="#b8b3b8"/>
+
+        <!-- cape collar trim -->
+        <g fill="#2a3340">
+          <rect x="4" y="13" width="3" height="1"/>
+          <rect x="11" y="13" width="3" height="1"/>
+          <rect x="3" y="14" width="12" height="1"/>
+        </g>
+
+        <!-- cape body -->
+        <g fill="#1a1f26">
+          <rect x="2" y="15" width="14" height="1"/>
+          <rect x="1" y="16" width="16" height="2"/>
+          <rect x="0" y="18" width="18" height="4"/>
+        </g>
+
+        <!-- cape inner sliver -->
+        <g fill="#232a33">
+          <rect x="7" y="15" width="4" height="1"/>
+          <rect x="8" y="16" width="2" height="1"/>
+        </g>
+
+        <!-- floating Z (animated) -->
+        <g class="count-z">
+          <rect x="14" y="2" width="3" height="1" fill="currentColor"/>
+          <rect x="16" y="3" width="1" height="1" fill="currentColor"/>
+          <rect x="15" y="4" width="1" height="1" fill="currentColor"/>
+          <rect x="14" y="5" width="1" height="1" fill="currentColor"/>
+          <rect x="14" y="6" width="3" height="1" fill="currentColor"/>
+        </g>
+      </svg>
+      <div>
+        <h1>Goldberg Sessions</h1>
+        <div class="sub">
+          Pay-per-buffer audio on Radius. One onchain <code>open</code> escrow → offchain EIP-712 voucher per chunk →
+          one onchain <code>close</code>. Vouchers only signed while the buffer is filling; cached chunks replay free.
+        </div>
+      </div>
+    </header>
 
     <div id="session-banner" class="session-banner closed">
       <div class="session-status">
@@ -298,6 +593,54 @@
       Audio: J.S. Bach — Goldberg Variations BWV 988, Aria. Performed by Bradley Lehman.
       <a href="https://commons.wikimedia.org/wiki/File:988-aria.lehman1.ogg" target="_blank" rel="noopener">Public Domain via Wikimedia Commons</a>.
     </div>
+
+    <hr class="contract-divider" />
+    <details class="contract-section" open>
+      <summary>The escrow contract</summary>
+      <p class="contract-blurb">
+        <code>SessionEscrow</code> is a minimal MPP-style escrow on Radius. Two onchain transactions per
+        session bookend an arbitrary number of free, offchain EIP-712 vouchers. SBC is pulled in via
+        EIP-2612 <code>permit</code> on <code>open</code>; only the final cumulative voucher is settled on <code>close</code>.
+      </p>
+      <div class="contract-protocol">
+        protocol · <code>payer.open(sessionId, payee, amount, …)</code> → sign vouchers offchain →
+        <code>payee.close(sessionId, finalCumulativeAmount, nonce, v, r, s)</code>
+      </div>
+<pre class="code-block"><code><span class="cm">// SessionEscrow.sol — Radius testnet, chain 72344</span>
+<span class="kw">bytes32</span> <span class="kw">public constant</span> VOUCHER_TYPEHASH = keccak256(
+    <span class="str">"Voucher(bytes32 sessionId,uint256 cumulativeAmount,uint256 nonce)"</span>
+);
+
+<span class="kw">struct</span> <span class="ty">Session</span> {
+    <span class="kw">address</span> payer; <span class="kw">address</span> payee;
+    <span class="kw">uint128</span> deposited; <span class="kw">uint128</span> spent;
+    <span class="kw">uint64</span>  expiry;    <span class="kw">bool</span>    closed;
+}
+
+<span class="cm">// tx 1 · payer pulls funds in via EIP-2612 permit</span>
+<span class="kw">function</span> <span class="fn">open</span>(
+    <span class="kw">bytes32</span> sessionId, <span class="kw">address</span> payee, <span class="kw">uint128</span> amount, <span class="kw">uint64</span> duration,
+    <span class="kw">uint256</span> permitDeadline, <span class="kw">uint8</span> pv, <span class="kw">bytes32</span> pr, <span class="kw">bytes32</span> ps
+) <span class="kw">external</span>;
+
+<span class="cm">// tx 2 · payee submits final voucher; contract pays + refunds atomically</span>
+<span class="kw">function</span> <span class="fn">close</span>(
+    <span class="kw">bytes32</span> sessionId, <span class="kw">uint256</span> cumulativeAmount, <span class="kw">uint256</span> nonce,
+    <span class="kw">uint8</span> v, <span class="kw">bytes32</span> r, <span class="kw">bytes32</span> s
+) <span class="kw">external</span>; <span class="cm">// require(signer == payer); transfer(payee, cum); refund(payer)</span>
+
+<span class="cm">// liveness escape · payer reclaims full deposit if payee never closes</span>
+<span class="kw">function</span> <span class="fn">reclaim</span>(<span class="kw">bytes32</span> sessionId) <span class="kw">external</span>;</code></pre>
+      <div class="contract-links">
+        <a id="contract-explorer-link"
+           href="https://testnet.radiustech.xyz"
+           target="_blank" rel="noopener"
+           data-chain-id="72344"
+           data-contract="SessionEscrow">View on Radius testnet ↗</a>
+        <a href="https://github.com/radius-workshop/audio-stream-x402/blob/codex/initial-workshop-demo/contracts/src/SessionEscrow.sol"
+           target="_blank" rel="noopener">Full source on GitHub ↗</a>
+      </div>
+    </details>
     </main>
 
     <aside>
@@ -319,13 +662,18 @@
             <div class="desc">fetches only while ahead &lt; 15s</div>
           </div>
         </div>
-        <a class="comp" id="c-wallet" href="#" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
+        <div class="comp" id="c-wallet-row">
           <div class="icon">⚿</div>
           <div>
-            <div class="name">Ephemeral viem wallet ↗</div>
-            <div class="desc" id="c-wallet-desc">localStorage key, signs EIP-712 vouchers</div>
+            <a id="c-wallet" href="#" target="_blank" rel="noopener"
+               style="text-decoration:none;color:inherit;display:block">
+              <div class="name">Ephemeral viem wallet ↗</div>
+              <div class="desc" id="c-wallet-desc">localStorage key, signs EIP-712 vouchers</div>
+            </a>
+            <button id="rotate-wallet" class="rotate-wallet"
+                    title="Generate a fresh demo wallet (clears localStorage)">↻ rotate</button>
           </div>
-        </a>
+        </div>
       </div>
 
       <div class="arrow voucher" id="a-voucher">
@@ -408,6 +756,14 @@
         el.textContent += `[${new Date().toISOString().slice(11, 19)}] ${m}\n`;
         el.scrollTop = el.scrollHeight;
       };
+      const mobilePlaybackUnsupported = matchMedia("(max-width: 720px), (pointer: coarse)").matches;
+      if (mobilePlaybackUnsupported) {
+        document.getElementById("play").disabled = true;
+        document.getElementById("seek-fwd").disabled = true;
+        audio.removeAttribute("controls");
+        audio.style.display = "none";
+        log("Mobile playback is not supported. Try this demo from a desktop browser.");
+      }
 
       // ---- architecture drawer event hooks ----
       let onchainTxCount = 0;
@@ -539,14 +895,21 @@
       document.getElementById("c-wallet").href = addrUrl(account.address);
       document.getElementById("c-wallet-desc").textContent =
         `${account.address.slice(0, 10)}…${account.address.slice(-6)} · signs EIP-712 vouchers`;
+      const explorerLink = document.getElementById("contract-explorer-link");
       if (manifest.escrow && manifest.escrow !== "0x0000000000000000000000000000000000000000") {
         document.getElementById("c-escrow").href = addrUrl(manifest.escrow);
         document.getElementById("c-escrow-desc").textContent =
           `${manifest.escrow.slice(0, 10)}…${manifest.escrow.slice(-6)} · holds deposit`;
+        explorerLink.href = addrUrl(manifest.escrow);
+        explorerLink.dataset.address = manifest.escrow;
+        explorerLink.textContent =
+          `View ${manifest.escrow.slice(0, 8)}…${manifest.escrow.slice(-6)} on Radius testnet ↗`;
       } else {
         document.getElementById("c-escrow").removeAttribute("href");
         document.getElementById("c-escrow-desc").textContent =
           "not deployed — set ESCROW_ADDRESS in wrangler.toml";
+        explorerLink.textContent = "Contract not deployed — set ESCROW_ADDRESS";
+        explorerLink.removeAttribute("href");
       }
 
       setActive("c-wallet", true);
@@ -1001,6 +1364,18 @@
         try { await audio.play(); } catch (e) { log(`play() rejected: ${e?.message ?? e}`); }
       };
       document.getElementById("end-session").onclick = () => closeSession();
+      document.getElementById("rotate-wallet").onclick = () => {
+        // The Radius faucet rate-limits per address. Persisting the same
+        // demo wallet across reloads can hit its cooldown and block new
+        // sessions until it lapses. Rotating wipes the key so the next
+        // load mints a fresh one.
+        if (sessionOpened) {
+          log("rotate: close the current session first.");
+          return;
+        }
+        localStorage.removeItem("audio-x402.pk");
+        location.reload();
+      };
       document.getElementById("seek-fwd").onclick = () => {
         const t = audio.currentTime + 10;
         audio.currentTime = t;
