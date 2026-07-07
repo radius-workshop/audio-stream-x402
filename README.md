@@ -109,3 +109,7 @@ cd contracts && forge build
 ```
 
 `forge build` requires `contracts/lib/forge-std`, which is intentionally ignored. Install it with the command above before building contracts from a fresh checkout.
+
+---
+
+> ⚠️ **Demo code — not production-ready.** Provided as-is, without warranty, and may contain known, unpatched vulnerabilities (including in dependencies). If you reuse it, run your own security and supply-chain scans and patch before deploying.
